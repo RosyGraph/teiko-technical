@@ -1,3 +1,4 @@
+import logging
 from sqlalchemy.orm import Session
 from csv import DictReader
 from pathlib import Path
@@ -12,9 +13,16 @@ CELL_POPULATIONS = [
     "nk_cell",
     "monocyte",
 ]
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+)
+
+logger = logging.getLogger(__name__)
 
 
 def initialize_db():
+    logging.debug("Initializing db")
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
@@ -89,9 +97,13 @@ def _fill_samples(session: Session, csv_path: Path | None = None):
 
 def load_data():
     with SessionLocal() as session:
+        logger.info("Loading projects")
         _fill_projects(session)
+        logger.info("Loading subjects")
         _fill_subjects(session)
+        logger.info("Loading samples")
         _fill_samples(session)
+    logger.info("Finished loading data")
 
 
 if __name__ == "__main__":
