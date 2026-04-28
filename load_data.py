@@ -76,7 +76,7 @@ def _fill_samples(session: Session, csv_path: Path | None = None):
                 [
                     CellCount(
                         population=population,
-                        count=row[population],
+                        count=int(row[population]),
                         sample_id=sample.id,
                     )
                     for population in CELL_POPULATIONS
