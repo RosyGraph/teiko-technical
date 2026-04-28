@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Boolean, UniqueConstraint, ForeignKey
+from sqlalchemy import UniqueConstraint, ForeignKey
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship
 
 Base = declarative_base()
@@ -16,11 +16,11 @@ class Project(Base):
 class Subject(Base):
     __tablename__ = "subject"
     id: Mapped[str] = mapped_column(primary_key=True)
-    condition: Mapped[str] = mapped_column(String, nullable=False)
-    age: Mapped[int] = mapped_column(Integer, nullable=False)
-    sex: Mapped[str] = mapped_column(String(1), nullable=False)
-    treatment: Mapped[str] = mapped_column(String, nullable=False)
-    response: Mapped[bool | None] = mapped_column(Boolean)
+    condition: Mapped[str]
+    age: Mapped[int]
+    sex: Mapped[str]
+    treatment: Mapped[str]
+    response: Mapped[bool | None]
 
     project_id: Mapped[str] = mapped_column(ForeignKey("project.id"))
     project: Mapped[Project] = relationship(back_populates="subjects")
@@ -33,8 +33,8 @@ class Subject(Base):
 class Sample(Base):
     __tablename__ = "sample"
     id: Mapped[str] = mapped_column(primary_key=True)
-    sample_type: Mapped[str] = mapped_column(nullable=False)
-    time_from_treatment_start: Mapped[int] = mapped_column()
+    sample_type: Mapped[str]
+    time_from_treatment_start: Mapped[int]
 
     subject_id: Mapped[str] = mapped_column(ForeignKey("subject.id"))
     subject: Mapped[Subject] = relationship(back_populates="samples")
@@ -56,7 +56,7 @@ class Sample(Base):
 class CellCount(Base):
     __tablename__ = "cellcount"
     id: Mapped[int] = mapped_column(primary_key=True)
-    population: Mapped[str] = mapped_column(nullable=False)
+    population: Mapped[str]
     count: Mapped[int]
 
     sample_id: Mapped[str] = mapped_column(ForeignKey("sample.id"))
