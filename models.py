@@ -35,19 +35,37 @@ class Sample(Base):
     id: Mapped[str] = mapped_column(primary_key=True)
     sample_type: Mapped[str] = mapped_column(nullable=False)
     time_from_treatment_start: Mapped[int] = mapped_column()
-    b_cell: Mapped[int] = mapped_column(nullable=False)
-    cd8_t_cell: Mapped[int] = mapped_column(nullable=False)
-    cd4_t_cell: Mapped[int] = mapped_column(nullable=False)
-    nk_cell: Mapped[int] = mapped_column(nullable=False)
-    monocyte: Mapped[int] = mapped_column(nullable=False)
 
     subject_id: Mapped[str] = mapped_column(ForeignKey("subject.id"))
     subject: Mapped[Subject] = relationship(back_populates="samples")
+
+    cell_counts: "Mapped[list[CellCount]]" = relationship(
+        back_populates="sample", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         UniqueConstraint(
             "subject_id",
             "time_from_treatment_start",
-            name="uq_subject_id_time_from_treatment_start",
+            "sample_type",
+            name="uq_sample_type_time",
+        ),
+    )
+
+
+class CellCount(Base):
+    __tablename__ = "cellcount"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    population: Mapped[str] = mapped_column(nullable=False)
+    count: Mapped[int]
+
+    sample_id: Mapped[str] = mapped_column(ForeignKey("sample.id"))
+    sample: Mapped[Sample] = relationship(back_populates="cell_counts")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "sample_id",
+            "population",
+            name="uq_sample_id_population",
         ),
     )

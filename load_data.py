@@ -2,9 +2,16 @@ from sqlalchemy.orm import Session
 from csv import DictReader
 from pathlib import Path
 from db import engine, SessionLocal
-from models import Base, Project, Subject, Sample
+from models import Base, Project, Subject, Sample, CellCount
 
 CSV_PATH = Path("cell-count.csv")
+CELL_POPULATIONS = [
+    "b_cell",
+    "cd8_t_cell",
+    "cd4_t_cell",
+    "nk_cell",
+    "monocyte",
+]
 
 
 def initialize_db():
@@ -52,22 +59,27 @@ def _fill_subjects(session: Session):
 def _fill_samples(session: Session):
     with CSV_PATH.open("r", newline="") as f:
         reader = DictReader(f)
-        session.add_all(
-            [
-                Sample(
-                    id=row["sample"],
-                    sample_type=row["sample_type"],
-                    time_from_treatment_start=row["time_from_treatment_start"],
-                    b_cell=row["b_cell"],
-                    cd8_t_cell=row["cd8_t_cell"],
-                    cd4_t_cell=row["cd4_t_cell"],
-                    nk_cell=row["nk_cell"],
-                    monocyte=row["monocyte"],
-                    subject_id=row["subject"],
-                )
-                for row in reader
-            ]
-        )
+        sessions_to_add = []
+        cell_counts_to_add = []
+        for row in reader:
+            sample = Sample(
+                id=row["sample"],
+                sample_type=row["sample_type"],
+                time_from_treatment_start=row["time_from_treatment_start"],
+                subject_id=row["subject"],
+            )
+            cell_counts_to_add.extend(
+                [
+                    CellCount(
+                        population=population,
+                        count=row[population],
+                        sample_id=sample.id,
+                    )
+                    for population in CELL_POPULATIONS
+                ]
+            )
+        session.add_all(sessions_to_add)
+        session.add_all(cell_counts_to_add)
     session.commit()
 
 
