@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from csv import DictReader
 from pathlib import Path
 from db import engine, SessionLocal
-from models import Base, Project, Subject
+from models import Base, Project, Subject, Sample
 
 CSV_PATH = Path("cell-count.csv")
 
@@ -49,11 +49,33 @@ def _fill_subjects(session: Session):
     session.commit()
 
 
+def _fill_samples(session: Session):
+    with CSV_PATH.open("r", newline="") as f:
+        reader = DictReader(f)
+        session.add_all(
+            [
+                Sample(
+                    id=row["sample"],
+                    sample_type=row["sample_type"],
+                    time_from_treatment_start=row["time_from_treatment_start"],
+                    b_cell=row["b_cell"],
+                    cd8_t_cell=row["cd8_t_cell"],
+                    cd4_t_cell=row["cd4_t_cell"],
+                    nk_cell=row["nk_cell"],
+                    monocyte=row["monocyte"],
+                    subject_id=row["subject"],
+                )
+                for row in reader
+            ]
+        )
+    session.commit()
+
+
 def load_data():
     with SessionLocal() as session:
         _fill_projects(session)
         _fill_subjects(session)
-        # _fill_samples()
+        _fill_samples(session)
 
 
 if __name__ == "__main__":
