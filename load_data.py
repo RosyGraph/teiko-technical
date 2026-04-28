@@ -4,7 +4,7 @@ from pathlib import Path
 from db import engine, SessionLocal
 from models import Base, Project, Subject, Sample, CellCount
 
-CSV_PATH = Path("cell-count.csv")
+DEFAULT_CSV_PATH = Path("cell-count.csv")
 CELL_POPULATIONS = [
     "b_cell",
     "cd8_t_cell",
@@ -19,8 +19,9 @@ def initialize_db():
     Base.metadata.create_all(bind=engine)
 
 
-def _fill_projects(session: Session):
-    with CSV_PATH.open("r", newline="") as f:
+def _fill_projects(session: Session, csv_path: Path | None = None):
+    csv_path = csv_path or DEFAULT_CSV_PATH
+    with csv_path.open("r", newline="") as f:
         reader = DictReader(f)
         project_names = set()
         for row in reader:
@@ -29,8 +30,9 @@ def _fill_projects(session: Session):
     session.commit()
 
 
-def _fill_subjects(session: Session):
-    with CSV_PATH.open("r", newline="") as f:
+def _fill_subjects(session: Session, csv_path: Path | None = None):
+    csv_path = csv_path or DEFAULT_CSV_PATH
+    with csv_path.open("r", newline="") as f:
         reader = DictReader(f)
         subjects_by_id = {}
         for row in reader:
@@ -56,8 +58,9 @@ def _fill_subjects(session: Session):
     session.commit()
 
 
-def _fill_samples(session: Session):
-    with CSV_PATH.open("r", newline="") as f:
+def _fill_samples(session: Session, csv_path: Path | None = None):
+    csv_path = csv_path or DEFAULT_CSV_PATH
+    with csv_path.open("r", newline="") as f:
         reader = DictReader(f)
         samples_to_add = []
         cell_counts_to_add = []
