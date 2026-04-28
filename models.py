@@ -32,9 +32,14 @@ class Subject(Base):
 
 class Sample(Base):
     __tablename__ = "sample"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(unique=True)
+    id: Mapped[str] = mapped_column(primary_key=True)
+    sample_type: Mapped[str] = mapped_column(nullable=False)
     time_from_treatment_start: Mapped[int] = mapped_column()
+    b_cell: Mapped[int] = mapped_column(nullable=False)
+    cd8_t_cell: Mapped[int] = mapped_column(nullable=False)
+    cd4_t_cell: Mapped[int] = mapped_column(nullable=False)
+    nk_cell: Mapped[int] = mapped_column(nullable=False)
+    monocyte: Mapped[int] = mapped_column(nullable=False)
 
     subject_id: Mapped[str] = mapped_column(ForeignKey("subject.id"))
     subject: Mapped[Subject] = relationship(back_populates="samples")
