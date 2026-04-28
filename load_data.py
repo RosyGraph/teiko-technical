@@ -46,7 +46,7 @@ def _fill_subjects(session: Session):
                 subjects_by_id[subject_id] = Subject(
                     id=subject_id,
                     condition=row["condition"],
-                    age=row["age"],
+                    age=int(row["age"]),
                     sex=row["sex"],
                     treatment=row["treatment"],
                     project_id=row["project"],
@@ -59,15 +59,16 @@ def _fill_subjects(session: Session):
 def _fill_samples(session: Session):
     with CSV_PATH.open("r", newline="") as f:
         reader = DictReader(f)
-        sessions_to_add = []
+        samples_to_add = []
         cell_counts_to_add = []
         for row in reader:
             sample = Sample(
                 id=row["sample"],
                 sample_type=row["sample_type"],
-                time_from_treatment_start=row["time_from_treatment_start"],
+                time_from_treatment_start=int(row["time_from_treatment_start"]),
                 subject_id=row["subject"],
             )
+            samples_to_add.append(sample)
             cell_counts_to_add.extend(
                 [
                     CellCount(
@@ -78,7 +79,7 @@ def _fill_samples(session: Session):
                     for population in CELL_POPULATIONS
                 ]
             )
-        session.add_all(sessions_to_add)
+        session.add_all(samples_to_add)
         session.add_all(cell_counts_to_add)
     session.commit()
 

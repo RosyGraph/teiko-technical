@@ -54,7 +54,7 @@ class Sample(Base):
 
 
 class CellCount(Base):
-    __tablename__ = "cellcount"
+    __tablename__ = "cell_count"
     id: Mapped[int] = mapped_column(primary_key=True)
     population: Mapped[str]
     count: Mapped[int]
