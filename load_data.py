@@ -1,10 +1,10 @@
-from sqlalchemy import create_engine, inspect
+from db import engine
+from sqlalchemy import inspect
 from models import Base
 
 
 def initialize_db():
-    engine = create_engine("sqlite:///teiko.db", echo=True)
-    Base.metadata.create_all(engine)
+    Base.metadata.create_all(bind=engine)
     inspector = inspect(engine)
     print(inspector.get_table_names())
     for table_name in inspector.get_table_names():
