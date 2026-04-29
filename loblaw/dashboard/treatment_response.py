@@ -36,7 +36,7 @@ def display_boxplots(df):
         height=600,
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     st.subheader("Single Population Detail")
 
@@ -59,7 +59,7 @@ def display_boxplots(df):
         title=f"{population}: Responders vs Non-responders",
     )
 
-    st.plotly_chart(detail_fig, use_container_width=True)
+    st.plotly_chart(detail_fig, width="stretch")
 
 
 st.markdown("""
