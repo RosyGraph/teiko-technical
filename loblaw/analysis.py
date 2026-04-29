@@ -1,5 +1,6 @@
 from scipy.stats.mstats import mannwhitneyu
 import pandas as pd
+import numpy as np
 from collections.abc import Sequence, Mapping
 import logging
 from pathlib import Path
@@ -63,6 +64,21 @@ def load_miraclib_pbmc_cell_frequencies_df():
     return pd.DataFrame(frequencies)
 
 
+def bh_fdr(p_values: pd.Series) -> pd.Series:
+    p = p_values.to_numpy(dtype=float)
+    n = len(p)
+    order = np.argsort(p)
+    ranked_p = p[order]
+
+    adjusted = ranked_p * n / np.arange(1, n + 1)
+    adjusted = np.minimum.accumulate(adjusted[::-1])[::-1]
+    adjusted = np.clip(adjusted, 0, 1)
+    result = np.empty_like(adjusted)
+    result[order] = adjusted
+
+    return pd.Series(result, index=p_values.index)
+
+
 def compare_populations(group: pd.DataFrame) -> pd.Series:
     responders = group.loc[group["response"].eq(True), "percentage"]
     non = group.loc[group["response"].eq(False), "percentage"]
@@ -85,7 +101,10 @@ def compare_populations(group: pd.DataFrame) -> pd.Series:
 def compare_miraclib_pbmc_populations_by_response(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df_with_p_values = df.groupby("population").apply(compare_populations).reset_index()
-    return df_with_p_values
+    df_with_p_values["p_value_bh_fdr"] = bh_fdr(df_with_p_values["p_value"])
+    df_with_p_values["significant_raw"] = df_with_p_values["p_value"] < 0.05
+    df_with_p_values["significant_bh_fdr"] = df_with_p_values["p_value_bh_fdr"] < 0.05
+    return df_with_p_values.sort_values("p_value").reset_index(drop=True)
 
 
 def persist_cell_count_summary(cell_counts: Sequence[Mapping], out: Path | None = None):
