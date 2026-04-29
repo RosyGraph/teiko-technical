@@ -1,10 +1,10 @@
 import pandas as pd
-from collections.abc import Mapping
+from collections.abc import Sequence, Mapping
 import logging
 from pathlib import Path
 from csv import DictWriter
-from sqlalchemy import select, func
-from loblaw.models import CellCount
+from sqlalchemy import select, func, Select, RowMapping
+from loblaw.models import CellCount, Sample, Subject
 from loblaw.db import SessionLocal
 from sqlalchemy.orm import Session
 
@@ -12,7 +12,7 @@ DEFAULT_CELL_COUNT_SUMMARY_PATH = Path("reports/cell_counts_summary.csv")
 logger = logging.getLogger(__name__)
 
 
-def summarize_cell_counts(session: Session):
+def select_cell_population_frequencies() -> Select:
     total_count_ann = (
         func.sum(CellCount.count)
         .over(partition_by=CellCount.sample_id)
@@ -25,12 +25,44 @@ def summarize_cell_counts(session: Session):
         CellCount.count,
         (100.0 * CellCount.count / total_count_ann).label("percentage"),
     ).order_by(CellCount.sample_id, CellCount.population)
+    return stmt
+
+
+def query_cell_counts(session: Session) -> Sequence[RowMapping]:
+    stmt = select_cell_population_frequencies()
     return session.execute(stmt).mappings().all()
 
 
-def persist_cell_count_summary(
-    cell_counts: list[Mapping[str, object]], out: Path | None = None
-):
+def query_miraclib_pbmc_cell_frequencies(session: Session) -> Sequence[RowMapping]:
+    freqs = select_cell_population_frequencies().subquery()
+    stmt = (
+        select(
+            freqs.c.sample,
+            freqs.c.total_count,
+            freqs.c.population,
+            freqs.c.count,
+            freqs.c.percentage,
+            Subject.response,
+        )
+        .join(Sample, Sample.id == freqs.c.sample)
+        .join(Subject, Subject.id == Sample.subject_id)
+        .where(
+            Sample.sample_type == "PBMC",
+            Subject.condition == "melanoma",
+            Subject.treatment == "miraclib",
+            Subject.response.is_not(None),
+        )
+    )
+    return session.execute(stmt).mappings().all()
+
+
+def load_miraclib_pbmc_cell_frequencies_df():
+    with SessionLocal() as session:
+        frequencies = query_miraclib_pbmc_cell_frequencies(session)
+    return pd.DataFrame(frequencies)
+
+
+def persist_cell_count_summary(cell_counts: Sequence[Mapping], out: Path | None = None):
     out = out or DEFAULT_CELL_COUNT_SUMMARY_PATH
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w") as f:
@@ -43,14 +75,14 @@ def persist_cell_count_summary(
 
 def load_cell_count_summary_df():
     with SessionLocal() as session:
-        cell_counts = summarize_cell_counts(session)
+        cell_counts = query_cell_counts(session)
     return pd.DataFrame(cell_counts)
 
 
 if __name__ == "__main__":
     with SessionLocal() as session:
         logger.info("Summarizing cell counts")
-        cell_counts = summarize_cell_counts(session)
+        cell_counts = query_cell_counts(session)
         logger.info(
             "Persisting cell count summary to %s", DEFAULT_CELL_COUNT_SUMMARY_PATH.name
         )
