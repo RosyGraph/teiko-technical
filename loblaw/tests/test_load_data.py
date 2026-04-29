@@ -1,5 +1,5 @@
-from models import Sample, CellCount, Project, Subject
-from load_data import _fill_projects, _fill_subjects, _fill_samples
+from loblaw.models import Sample, CellCount, Project, Subject
+from loblaw.loader import load_project_rows, load_subject_rows, load_cell_sample_rows
 
 
 def test_fill_samples_creates_samples_and_cell_counts(session, tmp_path):
@@ -9,9 +9,9 @@ def test_fill_samples_creates_samples_and_cell_counts(session, tmp_path):
         "prj1,sbj001,melanoma,55,M,miraclib,yes,sample00001,PBMC,0,10,20,30,40,50\n"
     )
 
-    _fill_projects(session, csv_path)
-    _fill_subjects(session, csv_path)
-    _fill_samples(session, csv_path)
+    load_project_rows(session, csv_path)
+    load_subject_rows(session, csv_path)
+    load_cell_sample_rows(session, csv_path)
 
     projects = session.query(Project).all()
     subjects = session.query(Subject).all()
@@ -35,9 +35,9 @@ def test_fill_samples_creates_normalized_records(session, tmp_path):
         "prj2,sbj003,carcinoma,44,F,none,,sample00004,WB,0,1,2,3,4,5\n"
     )
 
-    _fill_projects(session, csv_path)
-    _fill_subjects(session, csv_path)
-    _fill_samples(session, csv_path)
+    load_project_rows(session, csv_path)
+    load_subject_rows(session, csv_path)
+    load_cell_sample_rows(session, csv_path)
 
     projects = session.query(Project).all()
     subjects = session.query(Subject).all()

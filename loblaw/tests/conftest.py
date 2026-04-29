@@ -1,4 +1,4 @@
-from models import Base
+from loblaw.models import Base
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

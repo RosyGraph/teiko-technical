@@ -1,15 +1,14 @@
+import pandas as pd
 from collections.abc import Mapping
 import logging
-from logging_config import configure_logging
 from pathlib import Path
 from csv import DictWriter
 from sqlalchemy import select, func
-from models import CellCount
-from db import SessionLocal
+from loblaw.models import CellCount
+from loblaw.db import SessionLocal
 from sqlalchemy.orm import Session
 
 DEFAULT_CELL_COUNT_SUMMARY_PATH = Path("reports/cell_counts_summary.csv")
-configure_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -40,6 +39,12 @@ def persist_cell_count_summary(
         )
         writer.writeheader()
         writer.writerows(cell_counts)
+
+
+def load_cell_count_summary_df():
+    with SessionLocal() as session:
+        cell_counts = summarize_cell_counts(session)
+    return pd.DataFrame(cell_counts)
 
 
 if __name__ == "__main__":
