@@ -75,7 +75,7 @@ def compare_populations(group: pd.DataFrame) -> pd.Series:
             "n_non_responders": len(non),
             "median_responder": responders_median,
             "median_non_responder": non_median,
-            "delta_media": responders_median - non_median,
+            "delta_median": responders_median - non_median,
             "p_value": p,
             "stat": stat,
         }
@@ -84,7 +84,8 @@ def compare_populations(group: pd.DataFrame) -> pd.Series:
 
 def compare_miraclib_pbmc_populations_by_response(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    return df.groupby("population").apply(compare_populations).reset_index()
+    df_with_p_values = df.groupby("population").apply(compare_populations).reset_index()
+    return df_with_p_values
 
 
 def persist_cell_count_summary(cell_counts: Sequence[Mapping], out: Path | None = None):
