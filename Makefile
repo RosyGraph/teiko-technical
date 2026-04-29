@@ -5,6 +5,7 @@ MIN_PYTHON := 3.10
 VENV := .venv
 VENV_PYTHON := $(VENV)/bin/python
 PYTEST := $(VENV)/bin/pytest
+VENV_STREAMLIT := $(VENV)/bin/streamlit
 
 doctor:
 	@$(PYTHON) -c 'import sys; exit(0 if sys.version_info >= (3,10) else 1)' || { \
@@ -22,6 +23,9 @@ setup: doctor
 pipeline: setup
 	$(VENV_PYTHON) load_data.py
 	$(VENV_PYTHON) loblaw/analysis.py
+
+dashboard: setup pipeline
+	$(VENV_STREAMLIT) run loblaw/dashboard/app.py
 
 test: setup
 	$(PYTEST)
