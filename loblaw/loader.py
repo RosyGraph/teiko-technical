@@ -1,6 +1,5 @@
 from loblaw.models import Base, Project, Subject, Sample, CellCount
 from loblaw.db import engine, SessionLocal
-from loblaw.logging_config import configure_logging
 import logging
 from sqlalchemy.orm import Session
 from csv import DictReader
@@ -14,7 +13,6 @@ CELL_POPULATIONS = [
     "nk_cell",
     "monocyte",
 ]
-configure_logging()
 logger = logging.getLogger(__name__)
 
 

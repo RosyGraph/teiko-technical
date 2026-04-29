@@ -1,7 +1,6 @@
 import pandas as pd
 from collections.abc import Mapping
 import logging
-from loblaw.logging_config import configure_logging
 from pathlib import Path
 from csv import DictWriter
 from sqlalchemy import select, func
@@ -10,7 +9,6 @@ from loblaw.db import SessionLocal
 from sqlalchemy.orm import Session
 
 DEFAULT_CELL_COUNT_SUMMARY_PATH = Path("reports/cell_counts_summary.csv")
-configure_logging()
 logger = logging.getLogger(__name__)
 
 
