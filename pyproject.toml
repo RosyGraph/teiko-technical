@@ -11,6 +11,11 @@ dependencies = [
     "streamlit>=1.57.0",
 ]
 
+[tool.setuptools.packages.find]
+exclude = ["reports*"]
+include = ["loblaw"]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["tests"]
+testpaths = ["loblaw/tests"]
+

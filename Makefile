@@ -21,7 +21,7 @@ setup: doctor
 
 pipeline: setup
 	$(VENV_PYTHON) load_data.py
-	$(VENV_PYTHON) analysis.py
+	$(VENV_PYTHON) loblaw/analysis.py
 
 test: setup
 	$(PYTEST)
