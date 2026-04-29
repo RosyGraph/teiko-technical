@@ -1,13 +1,32 @@
-.PHONY: setup pipeline dashboard test clean
+.PHONY: doctor setup pipeline dashboard test clean
 
-setup:
-	uv sync
+PYTHON := python3
+MIN_PYTHON := 3.10
+VENV := .venv
+VENV_PYTHON := $(VENV)/bin/python
+PYTEST := $(VENV)/bin/pytest
 
-pipeline:
-	uv run python load_data.py
+doctor:
+	@$(PYTHON) -c 'import sys; exit(0 if sys.version_info >= (3,10) else 1)' || { \
+		echo "Python >= $(MIN_PYTHON) is required."; \
+		echo "Found: $$($(PYTHON) --version 2>/dev/null || echo missing)"; \
+		exit 1; \
+	}
+	@echo "Python: $$($(PYTHON) --version)"
 
-test:
-	uv run pytest
+setup: doctor
+	$(PYTHON) -m venv $(VENV)
+	$(VENV_PYTHON) -m pip install --upgrade pip
+	$(VENV_PYTHON) -m pip install -e .
+
+pipeline: setup
+	$(VENV_PYTHON) load_data.py
+	$(VENV_PYTHON) analysis.py
+
+test: setup
+	$(PYTEST)
 
 clean:
+	rm -rf $(VENV)
 	rm -f teiko.db
+	rm -rf reports/
