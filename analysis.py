@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 import logging
 from logging_config import configure_logging
 from pathlib import Path
@@ -29,7 +30,7 @@ def summarize_cell_counts(session: Session):
 
 
 def persist_cell_count_summary(
-    cell_counts: list[dict[str, object]], out: Path | None = None
+    cell_counts: list[Mapping[str, object]], out: Path | None = None
 ):
     out = out or DEFAULT_CELL_COUNT_SUMMARY_PATH
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -46,7 +47,7 @@ if __name__ == "__main__":
         logger.info("Summarizing cell counts")
         cell_counts = summarize_cell_counts(session)
         logger.info(
-            f"Persisting cell count summary to {DEFAULT_CELL_COUNT_SUMMARY_PATH.name}"
+            "Persisting cell count summary to %s", DEFAULT_CELL_COUNT_SUMMARY_PATH.name
         )
         persist_cell_count_summary(cell_counts)
         logger.info("Done summarizing cell counts")
