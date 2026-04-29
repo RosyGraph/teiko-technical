@@ -1,3 +1,4 @@
+from logging_config import configure_logging
 import logging
 from sqlalchemy.orm import Session
 from csv import DictReader
@@ -13,11 +14,7 @@ CELL_POPULATIONS = [
     "nk_cell",
     "monocyte",
 ]
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-)
-
+configure_logging()
 logger = logging.getLogger(__name__)
 
 
