@@ -1,3 +1,4 @@
+from scipy.stats.mstats import mannwhitneyu
 import pandas as pd
 from collections.abc import Sequence, Mapping
 import logging
@@ -60,6 +61,30 @@ def load_miraclib_pbmc_cell_frequencies_df():
     with SessionLocal() as session:
         frequencies = query_miraclib_pbmc_cell_frequencies(session)
     return pd.DataFrame(frequencies)
+
+
+def compare_populations(group: pd.DataFrame) -> pd.Series:
+    responders = group.loc[group["response"].eq(True), "percentage"]
+    non = group.loc[group["response"].eq(False), "percentage"]
+    stat, p = mannwhitneyu(responders, non)
+    responders_median = responders.median()
+    non_median = non.median()
+    return pd.Series(
+        {
+            "n_responders": len(responders),
+            "n_non_responders": len(non),
+            "median_responder": responders_median,
+            "median_non_responder": non_median,
+            "delta_media": responders_median - non_median,
+            "p_value": p,
+            "stat": stat,
+        }
+    )
+
+
+def compare_miraclib_pbmc_populations_by_response(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    return df.groupby("population").apply(compare_populations).reset_index()
 
 
 def persist_cell_count_summary(cell_counts: Sequence[Mapping], out: Path | None = None):
