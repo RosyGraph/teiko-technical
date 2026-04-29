@@ -5,6 +5,7 @@ setup:
 
 pipeline:
 	uv run python load_data.py
+	uv run python analysis.py
 
 test:
 	uv run pytest
