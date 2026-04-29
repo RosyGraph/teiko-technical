@@ -11,7 +11,7 @@ Interactive dashboard for exploring immune cell population frequencies and treat
 
 ## Navigation:
 - [Data Overview](data_overview)
-- [Treatment Responder](treatment_response)
+- [Miraclib Treatment Responder](treatment_response)
 """
 
 st.markdown(SPLASH_MD)

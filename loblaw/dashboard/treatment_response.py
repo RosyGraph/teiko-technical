@@ -78,9 +78,8 @@ def display_single_population_boxplots(df):
     st.plotly_chart(detail_fig, width="stretch")
 
 
-st.markdown("""
-# Treatment Response
-""")
+st.header("Miraclib Treatment Response")
+st.caption("Analysis scope: PBMC samples from melanoma patients treated with miraclib.")
 df = load_miraclib_pbmc_cell_frequencies_df()
 summary_df = compare_miraclib_pbmc_populations_by_response(df)
 c1, c2, c3, c4 = st.columns(4)
