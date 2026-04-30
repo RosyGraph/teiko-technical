@@ -92,12 +92,11 @@ def load_cell_sample_rows(session: Session, csv_path: Path | None = None):
     session.commit()
 
 
-def load_data():
-    with SessionLocal() as session:
-        logger.info("Loading projects")
-        load_project_rows(session)
-        logger.info("Loading subjects")
-        load_subject_rows(session)
-        logger.info("Loading samples")
-        load_cell_sample_rows(session)
+def load_data(session: Session):
+    logger.info("Loading projects")
+    load_project_rows(session)
+    logger.info("Loading subjects")
+    load_subject_rows(session)
+    logger.info("Loading samples")
+    load_cell_sample_rows(session)
     logger.info("Finished loading data")

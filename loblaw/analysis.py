@@ -108,18 +108,3 @@ def baseline_miraclib_melanoma_pbmc_subjects_by_sex_df(
 ) -> pd.DataFrame:
     stmt = baseline_miraclib_melanoma_pbmc_subjects_by_sex_stmt()
     return pd.read_sql(stmt, session.bind)
-
-
-if __name__ == "__main__":
-    with SessionLocal() as session:
-        logger.info("Summarizing cell counts")
-        cell_counts = (
-            session.execute(all_sample_cell_population_frequencies_stmt())
-            .mappings()
-            .all()
-        )
-        logger.info(
-            "Persisting cell count summary to %s", DEFAULT_CELL_COUNT_SUMMARY_PATH.name
-        )
-        persist_cell_count_summary(cell_counts)
-        logger.info("Done summarizing cell counts")
