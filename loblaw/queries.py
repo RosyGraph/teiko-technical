@@ -94,3 +94,21 @@ def baseline_miraclib_melanoma_pbmc_subjects_by_sex_stmt() -> Select:
         .group_by(subset.c.sex)
         .order_by(subject_count.desc())
     )
+
+
+def baseline_melanoma_male_responders_avg_b_cells_stmt() -> Select:
+    return (
+        select(
+            func.avg(CellCount.count).label("average_count"),
+            func.count(CellCount.count).label("n_samples"),
+        )
+        .join(Sample, CellCount.sample_id == Sample.id)
+        .join(Subject, Sample.subject_id == Subject.id)
+        .where(
+            Subject.condition == "melanoma",
+            Subject.sex == "M",
+            Subject.response.is_(True),
+            Sample.time_from_treatment_start == 0,
+            CellCount.population == "b_cell",
+        )
+    )

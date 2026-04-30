@@ -14,6 +14,7 @@ from loblaw.db import SessionLocal
 from loblaw.models import CellCount, Project, Sample, Subject
 from loblaw.queries import (
     all_sample_cell_population_frequencies_stmt,
+    baseline_melanoma_male_responders_avg_b_cells_stmt,
     baseline_miraclib_melanoma_pbmc_samples_by_project_stmt,
     baseline_miraclib_melanoma_pbmc_samples_stmt,
     baseline_miraclib_melanoma_pbmc_subjects_by_response_stmt,
@@ -152,3 +153,15 @@ def load_baseline_subset_tables() -> BaselineSubsetTables:
         subjects_by_response=subjects_by_response_df,
         subjects_by_sex=subjects_by_sex_df,
     )
+
+
+def calculate_avg_b_cells_for_baseline_responders(session: Session):
+    stmt = baseline_melanoma_male_responders_avg_b_cells_stmt()
+    row = session.execute(stmt).one()
+    logger.info(
+        "Calculated average B-cell count for baseline melanoma male responders "
+        "using %s samples: %.2f",
+        row.n_samples,
+        row.average_count,
+    )
+    return round(float(row.average_count), 2)
