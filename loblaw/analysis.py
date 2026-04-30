@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 from csv import DictWriter
 from sqlalchemy import select, func, Select, RowMapping
-from loblaw.models import CellCount, Sample, Subject
+from loblaw.models import CellCount, Sample, Subject, Project
 from loblaw.db import SessionLocal
 from sqlalchemy.orm import Session
 
@@ -124,6 +124,66 @@ def load_cell_count_summary_df():
     with SessionLocal() as session:
         cell_counts = query_cell_counts(session)
     return pd.DataFrame(cell_counts)
+
+
+def select_miraclib_melanoma_pbmc_samples_subset():
+    return (
+        select(
+            Sample.id.label("sample"),
+            Subject.id.label("subject"),
+            Project.id.label("project"),
+            Subject.response.label("response"),
+            Subject.sex.label("sex"),
+            Sample.time_from_treatment_start,
+            Sample.sample_type,
+            Subject.condition,
+            Subject.treatment,
+        )
+        .join(Subject, Sample.subject_id == Subject.id)
+        .join(Project, Subject.project_id == Project.id)
+        .where(
+            Subject.condition == "melanoma",
+            Sample.sample_type == "PBMC",
+            Sample.time_from_treatment_start == 0,
+            Subject.treatment == "miraclib",
+        )
+        .order_by(Project.id, Subject.id, Sample.id)
+    )
+
+
+def load_subset_samples_by_project_df():
+    subset = select_miraclib_melanoma_pbmc_samples_subset().subquery()
+    stmt = (
+        select(subset.c.project, func.count(subset.c.sample).label("sample_count"))
+        .group_by(subset.c.project)
+        .order_by(subset.c.project)
+    )
+    with SessionLocal() as session:
+        return pd.read_sql(stmt, session.bind)
+
+
+def load_subset_subjects_by_response_df():
+    subset = select_miraclib_melanoma_pbmc_samples_subset().subquery()
+    subject_count = func.count(func.distinct(subset.c.subject)).label("subject_count")
+    stmt = (
+        select(subset.c.response, subject_count)
+        .group_by(subset.c.response)
+        .order_by(subject_count.desc())
+    )
+    with SessionLocal() as session:
+        return pd.read_sql(stmt, session.bind)
+
+
+def load_select_subset_subjects_by_sex_df():
+    subset = select_miraclib_melanoma_pbmc_samples_subset().subquery()
+    subject_count = func.count(func.distinct(subset.c.subject)).label("subject_count")
+    stmt = (
+        select(subset.c.sex, subject_count)
+        .group_by(subset.c.sex)
+        .order_by(subject_count.desc())
+    )
+    with SessionLocal() as session:
+        return pd.read_sql(stmt, session.bind)
 
 
 if __name__ == "__main__":
