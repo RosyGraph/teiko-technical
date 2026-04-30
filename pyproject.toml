@@ -16,6 +16,9 @@ dependencies = [
 [tool.ruff.lint]
 select = ["I"]
 
+[tool.ty.src]
+exclude = [".venv"]
+
 [tool.setuptools.packages.find]
 exclude = ["reports*"]
 include = ["loblaw*"]
