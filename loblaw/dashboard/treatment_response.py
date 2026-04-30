@@ -100,15 +100,36 @@ else:
 summary_df = compare_miraclib_pbmc_populations_by_response(analysis_df)
 c1, c2, c3, c4 = st.columns(4)
 n_responders = int(
-    len(analysis_df[analysis_df["response"].eq(True)]["subject_id"].unique())
+    analysis_df[analysis_df["response"].eq(True)]["subject_id"].nunique()
 )
 n_non_responders = int(
-    len(analysis_df[analysis_df["response"].eq(False)]["subject_id"].unique())
+    analysis_df[analysis_df["response"].eq(False)]["subject_id"].nunique()
 )
 c1.metric("Responder subjects", f"{n_responders:,}")
 c2.metric("Non-responder subjects", f"{n_non_responders:,}")
 c3.metric("Total subjects", f"{n_responders + n_non_responders:,}")
 c4.metric("Populations", len(summary_df))
+scope_label = (
+    "across all timepoints"
+    if selected_timepoint == "All timepoints"
+    else f"at time_from_treatment_start = {selected_timepoint}"
+)
+
+has_fdr_signal = summary_df["significant_bh_fdr"].any()
+has_raw_signal = summary_df["significant_raw"].any()
+best = summary_df.iloc[0]
+best_population = POPULATION_LABELS.get(best["population"], best["population"])
+
+if has_fdr_signal:
+    st.info(
+        f"Interpretation: {best_population} shows the strongest unadjusted difference "
+        f"between responders and non-responders {scope_label}, and at least one "
+        "population remains significant after BH-FDR correction."
+    )
+else:
+    st.info(
+        f"Interpretation: {best_population} shows the strongest unadjusted difference between responders and non-responders {scope_label} with an unadjusted p-value of {best['p_value']:.3f}, but no population remains significant after BH-FDR correction at 5%. Therefore, no cell population is reported as significantly different under the selected analysis scope."
+    )
 display_all_cell_boxplot(analysis_df)
 st.subheader("Statistical Analysis")
 st.caption(
@@ -134,7 +155,7 @@ st.dataframe(
     },
 )
 st.caption(
-    "Mann-Whitney U tests compare responder vs non-repsonder relative-frequency distributions for each cell population under the selected analysis scope. P values are shown adjusted across the five tested cell-population hypotheses using Benjamini-Hochberg FDR."
+    "Mann-Whitney U tests compare responder vs non-responder relative-frequency distributions for each cell population under the selected analysis scope. P values are shown adjusted across the five tested cell-population hypotheses using Benjamini-Hochberg FDR."
 )
 
 display_single_population_boxplots(analysis_df)
