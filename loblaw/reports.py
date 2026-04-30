@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import pandas as pd
@@ -10,12 +11,15 @@ from loblaw.analysis import (
     baseline_miraclib_melanoma_pbmc_samples_df,
     baseline_miraclib_melanoma_pbmc_subjects_by_response_df,
     baseline_miraclib_melanoma_pbmc_subjects_by_sex_df,
+    calculate_avg_b_cells_for_baseline_responders,
     compare_miraclib_pbmc_populations_by_response,
     miraclib_melanoma_pbmc_response_cell_frequencies_df,
 )
 from loblaw.db import SessionLocal
 from loblaw.figures import all_cell_populations_boxplot, count_bar_chart_fig
+from loblaw.logging_config import configure_logging
 
+logger = logging.getLogger(__name__)
 REPORTS_DIR = Path("reports/")
 
 
@@ -129,13 +133,24 @@ def persist_part4_reports(session: Session) -> None:
     persist_part4_subjects_by_sex(session)
 
 
+def persist_melanoma_male_responder_baseline_b_cell_average(session: Session) -> None:
+    value = calculate_avg_b_cells_for_baseline_responders(session)
+    (REPORTS_DIR / "melanoma_male_responder_baseline_b_cell_average.txt").write_text(
+        str(value)
+    )
+
+
 def persist_all_reports(session: Session) -> None:
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    logger.info("Persisting reports")
     persist_part2_reports(session)
     persist_part3_reports(session)
     persist_part4_reports(session)
+    persist_melanoma_male_responder_baseline_b_cell_average(session)
+    logger.info("Done persisting reports")
 
 
 if __name__ == "__main__":
+    configure_logging()
     with SessionLocal() as session:
         persist_all_reports(session)
