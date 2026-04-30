@@ -1,69 +1,42 @@
-from scipy.stats.mstats import mannwhitneyu
-import pandas as pd
-import numpy as np
-from collections.abc import Sequence, Mapping
 import logging
-from pathlib import Path
+from collections.abc import Mapping, Sequence
 from csv import DictWriter
-from sqlalchemy import select, func, Select, RowMapping
-from loblaw.models import CellCount, Sample, Subject, Project
-from loblaw.db import SessionLocal
+from dataclasses import dataclass
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from scipy.stats.mstats import mannwhitneyu
+from sqlalchemy import RowMapping, Select, func, select
 from sqlalchemy.orm import Session
+
+from loblaw.db import SessionLocal
+from loblaw.models import CellCount, Project, Sample, Subject
+from loblaw.queries import (
+    all_sample_cell_population_frequencies_stmt,
+    baseline_miraclib_melanoma_pbmc_samples_by_project_stmt,
+    baseline_miraclib_melanoma_pbmc_samples_stmt,
+    baseline_miraclib_melanoma_pbmc_subjects_by_response_stmt,
+    baseline_miraclib_melanoma_pbmc_subjects_by_sex_stmt,
+    miraclib_melanoma_pbmc_response_cell_frequencies_stmt,
+)
 
 DEFAULT_CELL_COUNT_SUMMARY_PATH = Path("reports/cell_counts_summary.csv")
 logger = logging.getLogger(__name__)
 
 
-def select_cell_population_frequencies() -> Select:
-    total_count_ann = (
-        func.sum(CellCount.count)
-        .over(partition_by=CellCount.sample_id)
-        .label("total_count")
-    )
-    stmt = select(
-        CellCount.sample_id.label("sample"),
-        total_count_ann,
-        CellCount.population,
-        CellCount.count,
-        (100.0 * CellCount.count / total_count_ann).label("percentage"),
-    ).order_by(CellCount.sample_id, CellCount.population)
-    return stmt
+@dataclass(frozen=True)
+class BaselineSubsetTables:
+    samples_by_project: pd.DataFrame
+    subjects_by_response: pd.DataFrame
+    subjects_by_sex: pd.DataFrame
 
 
-def query_cell_counts(session: Session) -> Sequence[RowMapping]:
-    stmt = select_cell_population_frequencies()
-    return session.execute(stmt).mappings().all()
-
-
-def query_miraclib_pbmc_cell_frequencies(session: Session) -> Sequence[RowMapping]:
-    freqs = select_cell_population_frequencies().subquery()
-    stmt = (
-        select(
-            freqs.c.sample,
-            freqs.c.total_count,
-            freqs.c.population,
-            freqs.c.count,
-            freqs.c.percentage,
-            Subject.response,
-            Sample.subject_id,
-            Sample.time_from_treatment_start,
-        )
-        .join(Sample, Sample.id == freqs.c.sample)
-        .join(Subject, Subject.id == Sample.subject_id)
-        .where(
-            Sample.sample_type == "PBMC",
-            Subject.condition == "melanoma",
-            Subject.treatment == "miraclib",
-            Subject.response.is_not(None),
-        )
-    )
-    return session.execute(stmt).mappings().all()
-
-
-def load_miraclib_pbmc_cell_frequencies_df():
-    with SessionLocal() as session:
-        frequencies = query_miraclib_pbmc_cell_frequencies(session)
-    return pd.DataFrame(frequencies)
+def miraclib_melanoma_pbmc_response_cell_frequencies_df(
+    session: Session,
+) -> pd.DataFrame:
+    stmt = miraclib_melanoma_pbmc_response_cell_frequencies_stmt()
+    return pd.read_sql(stmt, session.bind)
 
 
 def bh_fdr(p_values: pd.Series) -> pd.Series:
@@ -120,78 +93,62 @@ def persist_cell_count_summary(cell_counts: Sequence[Mapping], out: Path | None 
         writer.writerows(cell_counts)
 
 
-def load_cell_count_summary_df():
+def all_sample_cell_population_frequencies_df(session: Session) -> pd.DataFrame:
+    stmt = all_sample_cell_population_frequencies_stmt()
+    return pd.read_sql(stmt, session.bind)
+
+
+def baseline_miraclib_melanoma_pbmc_samples_df(session: Session):
+    stmt = baseline_miraclib_melanoma_pbmc_samples_stmt()
+    return pd.read_sql(stmt, session.bind)
+
+
+def baseline_miraclib_melanoma_pbmc_samples_by_project_df(
+    session: Session,
+) -> pd.DataFrame:
+    stmt = baseline_miraclib_melanoma_pbmc_samples_by_project_stmt()
+    return pd.read_sql(stmt, session.bind)
+
+
+def baseline_miraclib_melanoma_pbmc_subjects_by_response_df(
+    session: Session,
+) -> pd.DataFrame:
+    stmt = baseline_miraclib_melanoma_pbmc_subjects_by_response_stmt()
+    return pd.read_sql(stmt, session.bind)
+
+
+def baseline_miraclib_melanoma_pbmc_subjects_by_sex_df(
+    session: Session,
+) -> pd.DataFrame:
+    stmt = baseline_miraclib_melanoma_pbmc_subjects_by_sex_stmt()
+    return pd.read_sql(stmt, session.bind)
+
+
+def load_baseline_subset_tables() -> BaselineSubsetTables:
     with SessionLocal() as session:
-        cell_counts = query_cell_counts(session)
-    return pd.DataFrame(cell_counts)
-
-
-def select_miraclib_melanoma_pbmc_samples_subset():
-    return (
-        select(
-            Sample.id.label("sample"),
-            Subject.id.label("subject"),
-            Project.id.label("project"),
-            Subject.response.label("response"),
-            Subject.sex.label("sex"),
-            Sample.time_from_treatment_start,
-            Sample.sample_type,
-            Subject.condition,
-            Subject.treatment,
+        samples_by_project_df = baseline_miraclib_melanoma_pbmc_samples_by_project_df(
+            session
         )
-        .join(Subject, Sample.subject_id == Subject.id)
-        .join(Project, Subject.project_id == Project.id)
-        .where(
-            Subject.condition == "melanoma",
-            Sample.sample_type == "PBMC",
-            Sample.time_from_treatment_start == 0,
-            Subject.treatment == "miraclib",
+        samples_by_project_df = samples_by_project_df.rename(
+            columns={"project": "Project", "sample_count": "Samples"}
         )
-        .order_by(Project.id, Subject.id, Sample.id)
-    )
 
-
-def load_subset_samples_by_project_df():
-    subset = select_miraclib_melanoma_pbmc_samples_subset().subquery()
-    stmt = (
-        select(subset.c.project, func.count(subset.c.sample).label("sample_count"))
-        .group_by(subset.c.project)
-        .order_by(subset.c.project)
-    )
-    with SessionLocal() as session:
-        return pd.read_sql(stmt, session.bind)
-
-
-def load_subset_subjects_by_response_df():
-    subset = select_miraclib_melanoma_pbmc_samples_subset().subquery()
-    subject_count = func.count(func.distinct(subset.c.subject)).label("subject_count")
-    stmt = (
-        select(subset.c.response, subject_count)
-        .group_by(subset.c.response)
-        .order_by(subject_count.desc())
-    )
-    with SessionLocal() as session:
-        return pd.read_sql(stmt, session.bind)
-
-
-def load_select_subset_subjects_by_sex_df():
-    subset = select_miraclib_melanoma_pbmc_samples_subset().subquery()
-    subject_count = func.count(func.distinct(subset.c.subject)).label("subject_count")
-    stmt = (
-        select(subset.c.sex, subject_count)
-        .group_by(subset.c.sex)
-        .order_by(subject_count.desc())
-    )
-    with SessionLocal() as session:
-        return pd.read_sql(stmt, session.bind)
-
-
-if __name__ == "__main__":
-    with SessionLocal() as session:
-        logger.info("Summarizing cell counts")
-        cell_counts = query_cell_counts(session)
-        logger.info(
-            "Persisting cell count summary to %s", DEFAULT_CELL_COUNT_SUMMARY_PATH.name
+        subjects_by_response_df = (
+            baseline_miraclib_melanoma_pbmc_subjects_by_response_df(session)
         )
-        persist_cell_count_summary(cell_counts)
-        logger.info("Done summarizing cell counts")
+        subjects_by_response_df = subjects_by_response_df.rename(
+            columns={"response": "Response", "subject_count": "Subjects"}
+        )
+        subjects_by_response_df["Response"] = subjects_by_response_df["Response"].apply(
+            lambda r: "Responder" if r else "Non-responder"
+        )
+
+        subjects_by_sex_df = baseline_miraclib_melanoma_pbmc_subjects_by_sex_df(session)
+        subjects_by_sex_df = subjects_by_sex_df.rename(
+            columns={"sex": "Sex", "subject_count": "Subjects"}
+        )
+    return BaselineSubsetTables(
+        samples_by_project=samples_by_project_df,
+        subjects_by_response=subjects_by_response_df,
+        subjects_by_sex=subjects_by_sex_df,
+    )

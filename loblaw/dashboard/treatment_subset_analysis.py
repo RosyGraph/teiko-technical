@@ -1,89 +1,57 @@
+from dataclasses import astuple, dataclass
+
 import pandas as pd
-from loblaw.analysis import (
-    load_subset_samples_by_project_df,
-    load_subset_subjects_by_response_df,
-    load_select_subset_subjects_by_sex_df,
-)
-import streamlit as st
 import plotly.express as px
+import streamlit as st
 
+from loblaw.analysis import (
+    baseline_miraclib_melanoma_pbmc_samples_by_project_df,
+    baseline_miraclib_melanoma_pbmc_subjects_by_response_df,
+    baseline_miraclib_melanoma_pbmc_subjects_by_sex_df,
+    load_baseline_subset_tables,
+)
+from loblaw.db import SessionLocal
+from loblaw.figures import count_bar_chart_fig
 
-def display_count_bar_chart(df: pd.DataFrame, *, category: str, count: str, title: str):
-    fig = px.bar(
-        df,
-        x=count,
-        y=category,
-        color=category,
-        orientation="h",
-        text=count,
-        title=title,
-    )
-
-    fig.update_traces(
-        textposition="outside",
-        cliponaxis=False,
-    )
-
-    fig.update_layout(
-        xaxis_title=None,
-        yaxis_title=None,
-        showlegend=False,
-    )
-
-    fig.update_yaxes(categoryorder="total ascending")
-
-    st.plotly_chart(fig, use_container_width=True)
-
+tables = load_baseline_subset_tables()
 
 st.title("Treatment Subset Analysis")
 st.caption("Melanoma PBMC baseline samples from miraclib-treated patients.")
 
-subset_samples_by_project_df = load_subset_samples_by_project_df()
-subset_samples_by_project_df = subset_samples_by_project_df.rename(
-    columns={"project": "Project", "sample_count": "Samples"}
-)
-
-subset_subjects_by_response_df = load_subset_subjects_by_response_df()
-subset_subjects_by_response_df = subset_subjects_by_response_df.rename(
-    columns={"response": "Response", "subject_count": "Subjects"}
-)
-subset_subjects_by_response_df["Response"] = subset_subjects_by_response_df[
-    "Response"
-].apply(lambda r: "Responder" if r else "Non-responder")
-
-select_subset_subjects_by_sex_df = load_select_subset_subjects_by_sex_df()
-select_subset_subjects_by_sex_df = select_subset_subjects_by_sex_df.rename(
-    columns={"sex": "Sex", "subject_count": "Subjects"}
-)
-
 col1, col2 = st.columns(2)
-col1.metric("Matching samples", int(subset_samples_by_project_df["Samples"].sum()))
-col2.metric(
-    "Matching subjects", int(select_subset_subjects_by_sex_df["Subjects"].sum())
+col1.metric("Matching samples", int(tables.samples_by_project["Samples"].sum()))
+col2.metric("Matching subjects", int(tables.subjects_by_sex["Subjects"].sum()))
+
+st.plotly_chart(
+    count_bar_chart_fig(
+        tables.samples_by_project,
+        category="Project",
+        count="Samples",
+        title="Samples by project",
+    ),
+    width="stretch",
 )
 
-display_count_bar_chart(
-    subset_samples_by_project_df,
-    category="Project",
-    count="Samples",
-    title="Samples by project",
+st.plotly_chart(
+    count_bar_chart_fig(
+        tables.subjects_by_response,
+        category="Response",
+        count="Subjects",
+        title="Subjects by response",
+    ),
+    width="stretch",
 )
 
-display_count_bar_chart(
-    subset_subjects_by_response_df,
-    category="Response",
-    count="Subjects",
-    title="Subjects by response",
-)
-
-display_count_bar_chart(
-    select_subset_subjects_by_sex_df,
-    category="Sex",
-    count="Subjects",
-    title="Subjects by sex",
+st.plotly_chart(
+    count_bar_chart_fig(
+        tables.subjects_by_sex,
+        category="Sex",
+        count="Subjects",
+        title="Subjects by sex",
+    ),
+    width="stretch",
 )
 
 with st.expander("Show/download exact counts"):
-    st.dataframe(subset_samples_by_project_df, hide_index=True)
-    st.dataframe(subset_subjects_by_response_df, hide_index=True)
-    st.dataframe(select_subset_subjects_by_sex_df, hide_index=True)
+    for table in astuple(tables):
+        st.dataframe(table)

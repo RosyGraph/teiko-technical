@@ -1,5 +1,5 @@
-from loblaw.models import Sample, CellCount, Project, Subject
-from loblaw.loader import load_project_rows, load_subject_rows, load_cell_sample_rows
+from loblaw.loader import load_cell_sample_rows, load_project_rows, load_subject_rows
+from loblaw.models import CellCount, Project, Sample, Subject
 
 
 def test_fill_samples_creates_samples_and_cell_counts(session, tmp_path):
