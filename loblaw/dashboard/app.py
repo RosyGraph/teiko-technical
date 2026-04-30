@@ -1,4 +1,11 @@
+import sys
+from pathlib import Path
+
 import streamlit as st
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 splash_page = st.Page("splash.py", title="Home", icon="🏠")
 data_overview_page = st.Page("data_overview.py", title="Data Overview", icon="📊")
