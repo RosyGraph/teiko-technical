@@ -38,7 +38,7 @@ def __display_count_bar_chart(
 
     fig.update_yaxes(categoryorder="total ascending")
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 @dataclass(frozen=True)
