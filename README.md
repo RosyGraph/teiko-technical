@@ -168,3 +168,11 @@ reports/melanoma_male_responder_baseline_b_cell_average.txt
 ```
 
 It is computed using the filters stated in the question: `melanoma`, `male`, `responder`, `time_from_treatment_start = 0`, and `b_cell`.
+
+## Optional Nix development shell
+
+This repository includes `flake.nix` and `flake.lock` as an optional convenience for local development on systems with Nix installed.
+
+```bash
+nix develop
+```
