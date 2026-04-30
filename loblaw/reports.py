@@ -3,8 +3,13 @@ from pathlib import Path
 import pandas as pd
 from sqlalchemy.orm import Session
 
-from loblaw.analysis import all_sample_cell_population_frequencies_df
+from loblaw.analysis import (
+    all_sample_cell_population_frequencies_df,
+    compare_miraclib_pbmc_populations_by_response,
+    miraclib_melanoma_pbmc_response_cell_frequencies_df,
+)
 from loblaw.db import SessionLocal
+from loblaw.figures import all_cell_populations_boxplot
 
 REPORTS_DIR = Path("reports/")
 
@@ -29,30 +34,29 @@ def persist_part2_metadata(session: Session) -> None:
 
 def persist_part3_miraclib_pbmc_response_cell_frequencies(
     session: Session,
-    *,
-    selected_timepoint: int | None = None,
-) -> None: ...
+) -> None:
+    df = miraclib_melanoma_pbmc_response_cell_frequencies_df(session)
+    df.to_csv(
+        REPORTS_DIR / "part3_miraclib_pbmc_response_cell_frequencies.csv", index=False
+    )
 
 
 def persist_part3_population_response_statistics(
     session: Session,
-    *,
-    selected_timepoint: int | None = None,
-) -> None: ...
+) -> None:
+    df = miraclib_melanoma_pbmc_response_cell_frequencies_df(session)
+    summary_df = compare_miraclib_pbmc_populations_by_response(df)
+    summary_df.to_csv(
+        REPORTS_DIR / "part3_population_response_statistics.csv", index=False
+    )
 
 
 def persist_part3_all_cell_populations_boxplot(
     session: Session,
-    *,
-    selected_timepoint: int | None = None,
-) -> None: ...
-
-
-def persist_part3_treatment_response_report(
-    session: Session,
-    *,
-    selected_timepoint: int | None = None,
-) -> None: ...
+) -> None:
+    df = miraclib_melanoma_pbmc_response_cell_frequencies_df(session)
+    fig = all_cell_populations_boxplot(df)
+    fig.write_html(REPORTS_DIR / "part3_all_cell_populations_boxplot.html")
 
 
 def persist_part4_baseline_miraclib_melanoma_pbmc_samples(session: Session) -> None: ...
@@ -77,21 +81,10 @@ def persist_part2_reports(session: Session) -> None:
 
 def persist_part3_reports(
     session: Session,
-    *,
-    selected_timepoint: int | None = None,
 ) -> None:
-    persist_part3_miraclib_pbmc_response_cell_frequencies(
-        session, selected_timepoint=selected_timepoint
-    )
-    persist_part3_population_response_statistics(
-        session, selected_timepoint=selected_timepoint
-    )
-    persist_part3_all_cell_populations_boxplot(
-        session, selected_timepoint=selected_timepoint
-    )
-    persist_part3_treatment_response_report(
-        session, selected_timepoint=selected_timepoint
-    )
+    persist_part3_miraclib_pbmc_response_cell_frequencies(session)
+    persist_part3_population_response_statistics(session)
+    persist_part3_all_cell_populations_boxplot(session)
 
 
 def persist_part4_reports(session: Session) -> None:
