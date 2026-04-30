@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 
 Base = declarative_base()
@@ -29,6 +29,21 @@ class Subject(Base):
         back_populates="subject", cascade="all, delete-orphan"
     )
 
+    __table_args__ = (
+        Index(
+            "ix_subject_condition_treatment_response",
+            "condition",
+            "treatment",
+            "response",
+        ),
+        Index(
+            "ix_subject_condition_sex_response",
+            "condition",
+            "sex",
+            "response",
+        ),
+    )
+
 
 class Sample(Base):
     __tablename__ = "sample"
@@ -50,6 +65,11 @@ class Sample(Base):
             "sample_type",
             name="uq_sample_type_time",
         ),
+        Index(
+            "ix_sample_type_time",
+            "sample_type",
+            "time_from_treatment_start",
+        ),
     )
 
 
@@ -68,4 +88,5 @@ class CellCount(Base):
             "population",
             name="uq_sample_id_population",
         ),
+        Index("ix_cell_count_population", "population"),
     )
