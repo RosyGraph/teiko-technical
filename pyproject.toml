@@ -13,6 +13,9 @@ dependencies = [
     "streamlit>=1.57.0",
 ]
 
+[tool.ruff.lint]
+select = ["I"]
+
 [tool.setuptools.packages.find]
 exclude = ["reports*"]
 include = ["loblaw*"]

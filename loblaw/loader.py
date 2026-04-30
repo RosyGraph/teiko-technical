@@ -1,9 +1,11 @@
-from loblaw.models import Base, Project, Subject, Sample, CellCount
-from loblaw.db import engine, SessionLocal
 import logging
-from sqlalchemy.orm import Session
 from csv import DictReader
 from pathlib import Path
+
+from sqlalchemy.orm import Session
+
+from loblaw.db import SessionLocal, engine
+from loblaw.models import Base, CellCount, Project, Sample, Subject
 
 DEFAULT_CSV_PATH = Path("cell-count.csv")
 CELL_POPULATIONS = [

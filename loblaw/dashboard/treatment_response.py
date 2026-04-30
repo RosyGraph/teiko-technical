@@ -1,9 +1,10 @@
 import plotly.express as px
-from loblaw.analysis import (
-    load_miraclib_pbmc_cell_frequencies_df,
-    compare_miraclib_pbmc_populations_by_response,
-)
 import streamlit as st
+
+from loblaw.analysis import (
+    compare_miraclib_pbmc_populations_by_response,
+    load_miraclib_pbmc_cell_frequencies_df,
+)
 
 POPULATION_LABELS = {
     "b_cell": "B cell",

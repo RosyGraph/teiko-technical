@@ -1,42 +1,29 @@
-from scipy.stats.mstats import mannwhitneyu
-import pandas as pd
-import numpy as np
-from collections.abc import Sequence, Mapping
 import logging
-from pathlib import Path
+from collections.abc import Mapping, Sequence
 from csv import DictWriter
-from sqlalchemy import select, func, Select, RowMapping
-from loblaw.models import CellCount, Sample, Subject, Project
-from loblaw.db import SessionLocal
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from scipy.stats.mstats import mannwhitneyu
+from sqlalchemy import RowMapping, Select, func, select
 from sqlalchemy.orm import Session
+
+from loblaw.db import SessionLocal
+from loblaw.models import CellCount, Project, Sample, Subject
+from loblaw.queries import cell_population_frequencies_stmt
 
 DEFAULT_CELL_COUNT_SUMMARY_PATH = Path("reports/cell_counts_summary.csv")
 logger = logging.getLogger(__name__)
 
 
-def select_cell_population_frequencies() -> Select:
-    total_count_ann = (
-        func.sum(CellCount.count)
-        .over(partition_by=CellCount.sample_id)
-        .label("total_count")
-    )
-    stmt = select(
-        CellCount.sample_id.label("sample"),
-        total_count_ann,
-        CellCount.population,
-        CellCount.count,
-        (100.0 * CellCount.count / total_count_ann).label("percentage"),
-    ).order_by(CellCount.sample_id, CellCount.population)
-    return stmt
-
-
 def query_cell_counts(session: Session) -> Sequence[RowMapping]:
-    stmt = select_cell_population_frequencies()
+    stmt = cell_population_frequencies_stmt()
     return session.execute(stmt).mappings().all()
 
 
 def query_miraclib_pbmc_cell_frequencies(session: Session) -> Sequence[RowMapping]:
-    freqs = select_cell_population_frequencies().subquery()
+    freqs = cell_population_frequencies_stmt().subquery()
     stmt = (
         select(
             freqs.c.sample,
@@ -122,7 +109,7 @@ def persist_cell_count_summary(cell_counts: Sequence[Mapping], out: Path | None 
 
 def load_cell_count_summary_df():
     with SessionLocal() as session:
-        cell_counts = query_cell_counts(session)
+        cell_counts = session.execute(stmt).mappings().all()
     return pd.DataFrame(cell_counts)
 
 

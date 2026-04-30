@@ -1,11 +1,12 @@
 import pandas as pd
+import plotly.express as px
+import streamlit as st
+
 from loblaw.analysis import (
+    load_select_subset_subjects_by_sex_df,
     load_subset_samples_by_project_df,
     load_subset_subjects_by_response_df,
-    load_select_subset_subjects_by_sex_df,
 )
-import streamlit as st
-import plotly.express as px
 
 
 def display_count_bar_chart(df: pd.DataFrame, *, category: str, count: str, title: str):
