@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Mapping, Sequence
 from csv import DictWriter
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -14,6 +15,7 @@ from loblaw.models import CellCount, Project, Sample, Subject
 from loblaw.queries import (
     all_sample_cell_population_frequencies_stmt,
     baseline_miraclib_melanoma_pbmc_samples_by_project_stmt,
+    baseline_miraclib_melanoma_pbmc_samples_stmt,
     baseline_miraclib_melanoma_pbmc_subjects_by_response_stmt,
     baseline_miraclib_melanoma_pbmc_subjects_by_sex_stmt,
     miraclib_melanoma_pbmc_response_cell_frequencies_stmt,
@@ -21,6 +23,13 @@ from loblaw.queries import (
 
 DEFAULT_CELL_COUNT_SUMMARY_PATH = Path("reports/cell_counts_summary.csv")
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class BaselineSubsetTables:
+    samples_by_project: pd.DataFrame
+    subjects_by_response: pd.DataFrame
+    subjects_by_sex: pd.DataFrame
 
 
 def miraclib_melanoma_pbmc_response_cell_frequencies_df(
@@ -89,6 +98,11 @@ def all_sample_cell_population_frequencies_df(session: Session) -> pd.DataFrame:
     return pd.read_sql(stmt, session.bind)
 
 
+def baseline_miraclib_melanoma_pbmc_samples_df(session: Session):
+    stmt = baseline_miraclib_melanoma_pbmc_samples_stmt()
+    return pd.read_sql(stmt, session.bind)
+
+
 def baseline_miraclib_melanoma_pbmc_samples_by_project_df(
     session: Session,
 ) -> pd.DataFrame:
@@ -108,3 +122,33 @@ def baseline_miraclib_melanoma_pbmc_subjects_by_sex_df(
 ) -> pd.DataFrame:
     stmt = baseline_miraclib_melanoma_pbmc_subjects_by_sex_stmt()
     return pd.read_sql(stmt, session.bind)
+
+
+def load_baseline_subset_tables() -> BaselineSubsetTables:
+    with SessionLocal() as session:
+        samples_by_project_df = baseline_miraclib_melanoma_pbmc_samples_by_project_df(
+            session
+        )
+        samples_by_project_df = samples_by_project_df.rename(
+            columns={"project": "Project", "sample_count": "Samples"}
+        )
+
+        subjects_by_response_df = (
+            baseline_miraclib_melanoma_pbmc_subjects_by_response_df(session)
+        )
+        subjects_by_response_df = subjects_by_response_df.rename(
+            columns={"response": "Response", "subject_count": "Subjects"}
+        )
+        subjects_by_response_df["Response"] = subjects_by_response_df["Response"].apply(
+            lambda r: "Responder" if r else "Non-responder"
+        )
+
+        subjects_by_sex_df = baseline_miraclib_melanoma_pbmc_subjects_by_sex_df(session)
+        subjects_by_sex_df = subjects_by_sex_df.rename(
+            columns={"sex": "Sex", "subject_count": "Subjects"}
+        )
+    return BaselineSubsetTables(
+        samples_by_project=samples_by_project_df,
+        subjects_by_response=subjects_by_response_df,
+        subjects_by_sex=subjects_by_sex_df,
+    )

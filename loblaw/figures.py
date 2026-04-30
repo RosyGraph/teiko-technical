@@ -63,3 +63,31 @@ def single_population_boxplot(df: pd.DataFrame, population: str) -> Figure:
         title=f"{population}: Responders vs Non-responders",
     )
     return detail_fig
+
+
+def count_bar_chart_fig(
+    df: pd.DataFrame, *, category: str, count: str, title: str
+) -> Figure:
+    fig = px.bar(
+        df,
+        x=count,
+        y=category,
+        color=category,
+        orientation="h",
+        text=count,
+        title=title,
+    )
+
+    fig.update_traces(
+        textposition="outside",
+        cliponaxis=False,
+    )
+
+    fig.update_layout(
+        xaxis_title=None,
+        yaxis_title=None,
+        showlegend=False,
+    )
+
+    fig.update_yaxes(categoryorder="total ascending")
+    return fig
