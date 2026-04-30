@@ -45,6 +45,8 @@ def query_miraclib_pbmc_cell_frequencies(session: Session) -> Sequence[RowMappin
             freqs.c.count,
             freqs.c.percentage,
             Subject.response,
+            Sample.subject_id,
+            Sample.time_from_treatment_start,
         )
         .join(Sample, Sample.id == freqs.c.sample)
         .join(Subject, Subject.id == Sample.subject_id)

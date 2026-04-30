@@ -81,19 +81,40 @@ def display_single_population_boxplots(df):
 st.header("Miraclib Treatment Response")
 st.caption("Analysis scope: PBMC samples from melanoma patients treated with miraclib.")
 df = load_miraclib_pbmc_cell_frequencies_df()
-summary_df = compare_miraclib_pbmc_populations_by_response(df)
+timepoints = ["All timepoints"] + sorted(
+    df["time_from_treatment_start"].dropna().unique().tolist()
+)
+default_timepoint, *_ = timepoints
+selected_timepoint = st.selectbox(
+    "Analysis timepoint",
+    timepoints,
+    index=timepoints.index(default_timepoint),
+)
+if selected_timepoint == "All timepoints":
+    st.warning(
+        "This view pools samples across treatment timepoints. Select an individual timepoint to provide cleaner responder/non-responder comparisons when subjects have repeated samples."
+    )
+    analysis_df = df
+else:
+    analysis_df = df[df["time_from_treatment_start"] == selected_timepoint]
+summary_df = compare_miraclib_pbmc_populations_by_response(analysis_df)
 c1, c2, c3, c4 = st.columns(4)
-n_responders = int(summary_df.iloc[0]["n_responders"])
-n_non_responders = int(summary_df.iloc[0]["n_non_responders"])
-c1.metric("Responders", f"{n_responders:,}")
-c2.metric("Non-responders", f"{n_non_responders:,}")
+n_responders = int(
+    len(analysis_df[analysis_df["response"].eq(True)]["subject_id"].unique())
+)
+n_non_responders = int(
+    len(analysis_df[analysis_df["response"].eq(False)]["subject_id"].unique())
+)
+c1.metric("Responder subjects", f"{n_responders:,}")
+c2.metric("Non-responder subjects", f"{n_non_responders:,}")
 c3.metric("Total subjects", f"{n_responders + n_non_responders:,}")
 c4.metric("Populations", len(summary_df))
-display_all_cell_boxplot(df)
+display_all_cell_boxplot(analysis_df)
 st.subheader("Statistical Analysis")
-st.markdown("""
-CD4 T cells show the strongest unadjusted difference between responders and non-responders, but no cell population remained significant after BH-FDR correction at 5%.
-""")
+st.caption(
+    "Cell populations are sorted by raw p-value. BH-FDR p-values adjust across "
+    "the five tested cell-population hypotheses."
+)
 
 st.dataframe(
     summary_df,
@@ -113,9 +134,10 @@ st.dataframe(
     },
 )
 st.caption(
-    "Mann-Whitney U tests compare responder vs non-repsonder distributions for each cell population. P values are shown adjusted across the five tested cell-population hypotheses using Benjamini-Hochberg FDR."
+    "Mann-Whitney U tests compare responder vs non-repsonder relative-frequency distributions for each cell population under the selected analysis scope. P values are shown adjusted across the five tested cell-population hypotheses using Benjamini-Hochberg FDR."
 )
 
-display_single_population_boxplots(df)
+display_single_population_boxplots(analysis_df)
 
-st.dataframe(df)
+with st.expander("Show underlying population-frequency rows"):
+    st.dataframe(analysis_df, hide_index=True)
