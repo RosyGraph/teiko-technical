@@ -4,6 +4,8 @@ Solution repository for Teiko take home coding assignment
 
 This project loads immune-cell samples into a normalized SQLite database, computes relative cell-population frequencies, performs treatment-response analysis, and exposes the results through generated report artifacts and an interactive Streamlit dashboard.
 
+The dashboard is hosted at [cytometry-dashboard.rosygraph.com](https://cytometry-dashboard.rosygraph.com/).
+
 ## Quickstart
 
 This project requires Python 3.12+.
